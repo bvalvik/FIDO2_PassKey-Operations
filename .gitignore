@@ -1,0 +1,22 @@
+# Secrets, credentials, and token material
+*.secret
+*.token
+*.key
+*.pfx
+*.p12
+
+# Secret Store data
+SecretStore.vault.credential
+
+# Output files
+*.csv
+*.log
+
+# PowerShell compiled output
+*.ps1xml
+
+# VS Code settings (local overrides)
+.vscode/settings.json
+
+# Backup files
+*.bak
