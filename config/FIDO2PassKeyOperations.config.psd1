@@ -26,4 +26,5 @@
     # Output filename prefixes — a timestamp is appended at runtime
     FIDO2_NoHardwareKeyReportPrefix   = 'No-HardwareKey-Users'
     FIDO2_PlatformPasskeyReportPrefix = 'PlatformPasskey-Users'
+    FIDO2_NoFIDO2ReportPrefix         = 'No-FIDO2-Users'
 }
