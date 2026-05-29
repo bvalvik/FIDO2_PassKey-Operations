@@ -7,8 +7,9 @@
     # Output directory for CSV reports
     FIDO2_OutputPath = 'C:\Reports\FIDO2_PassKey-Operations'
 
-    # UPN domain suffix identifying corp (corp.standard.com on-prem) users
-    FIDO2_CorpDomain = '@standard.com'
+    # On-premises AD domain name identifying corp accounts synced to Entra ID.
+    # Mirrors the filter used in Get-EntraElevatedUsers.ps1: onPremisesDomainName -eq 'corp.standard.com'
+    FIDO2_OnPremDomain = 'corp.standard.com'
 
     # Regex applied to UPN prefix to exclude service/non-human accounts.
     # Accounts whose prefix matches any of these terms are excluded.

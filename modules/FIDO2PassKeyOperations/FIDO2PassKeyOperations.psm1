@@ -80,18 +80,23 @@ function Get-FIDO2UserRegistrations {
 function Get-FIDO2SamLookup {
 <#
 .SYNOPSIS
-    Builds a hashtable of Entra user ID -> onPremisesSamAccountName by paging
-    through the /users endpoint. Returns only entries that have a SAM account.
+    Builds a hashtable of Entra user ID -> [PSCustomObject]{ SamAccountName, OnPremisesDomainName }
+    by paging through the /users endpoint. Returns only entries that have a SAM account.
+    OnPremisesDomainName is used by Get-FIDO2CorpUsers to filter to corp.standard.com accounts,
+    mirroring the pattern in Get-EntraElevatedUsers.ps1.
 #>
-    Write-Host "Fetching SAM account names from user directory..."
+    Write-Host "Fetching SAM account names and on-premises domain from user directory..."
     $lookup = @{}
-    $uri    = 'https://graph.microsoft.com/v1.0/users?$select=id,onPremisesSamAccountName&$top=999'
+    $uri    = 'https://graph.microsoft.com/v1.0/users?$select=id,onPremisesSamAccountName,onPremisesDomainName&$top=999'
 
     do {
         $resp = Invoke-MgGraphRequest -Uri $uri -Method GET -ErrorAction Stop
         foreach ($u in $resp.value) {
             if ($u.onPremisesSamAccountName) {
-                $lookup[$u.id] = $u.onPremisesSamAccountName
+                $lookup[$u.id] = [PSCustomObject]@{
+                    SamAccountName       = $u.onPremisesSamAccountName
+                    OnPremisesDomainName = $u.onPremisesDomainName
+                }
             }
         }
         $uri = $resp['@odata.nextLink']
@@ -107,11 +112,14 @@ function Get-FIDO2CorpUsers {
 <#
 .SYNOPSIS
     Applies the base corp-user filter to a collection of userRegistrationDetails.
-    Filters to the configured domain, requires a dot in the UPN prefix (human
-    name format), excludes service-account keyword UPNs, and excludes disabled
-    accounts where AccountEnabled is explicitly false.
+    Requires onPremisesDomainName -eq FIDO2_OnPremDomain (corp.standard.com) via the
+    SAM lookup, mirroring the filter in Get-EntraElevatedUsers.ps1. Also requires a dot
+    in the UPN prefix (human name format), excludes service-account keyword UPNs, and
+    excludes disabled accounts where AccountEnabled is explicitly false.
 .PARAMETER Users
     Full collection from Get-FIDO2UserRegistrations.
+.PARAMETER SamLookup
+    Hashtable from Get-FIDO2SamLookup (id -> { SamAccountName, OnPremisesDomainName }).
 .PARAMETER Config
     Config hashtable from Get-FIDO2Config.
 #>
@@ -120,17 +128,22 @@ function Get-FIDO2CorpUsers {
         [object[]]$Users,
 
         [Parameter(Mandatory)]
+        [hashtable]$SamLookup,
+
+        [Parameter(Mandatory)]
         [hashtable]$Config
     )
 
-    $domain   = $Config.FIDO2_CorpDomain
+    $domain   = $Config.FIDO2_OnPremDomain
     $keywords = $Config.FIDO2_ServiceKeywords
 
     $filtered = $Users | Where-Object {
+        $entry  = $SamLookup[$_.Id]
         $upn    = $_.UserPrincipalName
         $prefix = ($upn -split '@')[0]
         $acct   = $_.PSObject.Properties['AccountEnabled']
-        $upn -like "*$domain" -and
+        $null -ne $entry -and
+        $entry.OnPremisesDomainName -eq $domain -and
         $prefix -match '\.' -and
         $prefix -notmatch $keywords -and
         ($null -eq $acct -or $acct.Value -ne $false)
@@ -180,7 +193,7 @@ function New-FIDO2UserRow {
     [PSCustomObject]@{
         UserPrincipalName       = $User.UserPrincipalName
         DisplayName             = $User.UserDisplayName
-        SamAccountName          = $SamLookup[$User.Id]
+        SamAccountName          = $SamLookup[$User.Id]?.SamAccountName
         Id                      = $User.Id
         AccountEnabled          = $User.PSObject.Properties['AccountEnabled']?.Value
         IsAdmin                 = $User.PSObject.Properties['IsAdmin']?.Value

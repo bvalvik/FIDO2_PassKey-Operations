@@ -62,7 +62,7 @@ try {
     $samLookup = Get-FIDO2SamLookup
 
     # Base filter: corp human accounts only
-    $corpUsers = Get-FIDO2CorpUsers -Users $allUsers -Config $config
+    $corpUsers = Get-FIDO2CorpUsers -Users $allUsers -SamLookup $samLookup -Config $config
 
     # Report filter: no hardware FIDO2 key registered
     $noKeyUsers = $corpUsers | Where-Object {

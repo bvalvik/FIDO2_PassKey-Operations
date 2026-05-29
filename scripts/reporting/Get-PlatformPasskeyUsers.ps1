@@ -65,7 +65,7 @@ try {
     $samLookup = Get-FIDO2SamLookup
 
     # Base filter: corp human accounts only
-    $corpUsers = Get-FIDO2CorpUsers -Users $allUsers -Config $config
+    $corpUsers = Get-FIDO2CorpUsers -Users $allUsers -SamLookup $samLookup -Config $config
 
     # Report filter: has at least one device-bound passkey, but no hardware key
     $passkeyUsers = $corpUsers | Where-Object {
