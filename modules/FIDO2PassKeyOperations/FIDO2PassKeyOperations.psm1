@@ -94,7 +94,7 @@ function Get-FIDO2SamLookup {
                 $lookup[$u.id] = $u.onPremisesSamAccountName
             }
         }
-        $uri = $resp.'@odata.nextLink'
+        $uri = $resp['@odata.nextLink']
     } while ($uri)
 
     Write-Host "SAM lookup built: $($lookup.Count) on-prem accounts found."
